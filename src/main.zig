@@ -32,39 +32,28 @@ pub fn main() !void {
 }
 
 fn cmdInit(gpa: Allocator, args: []const []const u8) !void {
-    var minimal = false;
-    var flake = false;
-
-    {
-        var i: usize = 0;
-        while (i < args.len) : (i += 1) {
-            const arg = args[i];
-            if (mem.startsWith(u8, arg, "-")) {
-                if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
-                    try io.getStdOut().writeAll(usage_init);
-                    return cleanExit();
-                } else if (mem.eql(u8, arg, "-m") or mem.eql(u8, arg, "--minimal")) {
-                    minimal = true;
-                } else if (mem.eql(u8, arg, "-f") or mem.eql(u8, arg, "--flake")) {
-                    flake = true;
-                } else {
-                    fatal("unrecognized parameter: '{s}'", .{arg});
-                }
-            } else {
-                fatal("unexpected extra parameter: '{s}'", .{arg});
-            }
-        }
-    }
-
     const s = fs.path.sep_str;
     const path_prefix = "lib" ++ s ++ "init" ++ s;
 
-    if (minimal) {
-        try copyTemplatesToCwd(gpa, path_prefix ++ "minimal");
-    } else if (flake) {
-        try copyTemplatesToCwd(gpa, path_prefix ++ "flake");
-    } else {
+    if (args.len == 0) {
         try copyTemplatesToCwd(gpa, path_prefix ++ "default");
+    }
+
+    for (args) |arg| {
+        if (mem.startsWith(u8, arg, "-")) {
+            if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
+                try io.getStdOut().writeAll(usage_init);
+                return cleanExit();
+            } else if (mem.eql(u8, arg, "-m") or mem.eql(u8, arg, "--minimal")) {
+                try copyTemplatesToCwd(gpa, path_prefix ++ "minimal");
+            } else if (mem.eql(u8, arg, "-f") or mem.eql(u8, arg, "--flake")) {
+                try copyTemplatesToCwd(gpa, path_prefix ++ "flake");
+            } else {
+                fatal("unrecognized parameter: '{s}'", .{arg});
+            }
+        } else {
+            fatal("unexpected extra parameter: '{s}'", .{arg});
+        }
     }
 
     return cleanExit();
@@ -90,7 +79,7 @@ pub fn copyTemplatesToCwd(allocator: Allocator, template_path: []const u8) !void
     while (try walker.next()) |entry| {
         switch (entry.kind) {
             .file => {
-                std.log.info("Copying file: {s}\n", .{entry.path});
+                std.log.info("Creating file: {s}\n", .{entry.path});
                 const src_file = try template_dir.openFile(entry.path, .{ .mode = .read_write });
                 defer src_file.close();
 
