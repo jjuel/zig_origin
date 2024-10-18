@@ -105,7 +105,7 @@ pub fn copyTemplatesToCwd(allocator: Allocator, template_path: []const u8) !void
 }
 
 const usage_init =
-    \\Usage: zo
+    \\Usage: zo init
     \\
     \\   Initializes a `zig build` project in the current working
     \\   directory.
