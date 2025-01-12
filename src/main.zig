@@ -31,29 +31,65 @@ pub fn main() !void {
     }
 }
 
+const InitOptions = struct {
+    minimal: bool = false,
+    flake: bool = false,
+    vcs: ?[]const u8 = null,
+};
+
 fn cmdInit(gpa: Allocator, args: []const []const u8) !void {
     const s = fs.path.sep_str;
     const path_prefix = "lib" ++ s ++ "init" ++ s;
+    var options = InitOptions{};
+    var templates_copied = false;
 
     if (args.len == 0) {
         try copyTemplatesToCwd(gpa, path_prefix ++ "default");
+        templates_copied = true;
     }
 
-    for (args) |arg| {
+    var i: usize = 0;
+    while (i < args.len) : (i += 1) {
+        const arg = args[i];
         if (mem.startsWith(u8, arg, "-")) {
             if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
                 try io.getStdOut().writeAll(usage_init);
                 return cleanExit();
             } else if (mem.eql(u8, arg, "-m") or mem.eql(u8, arg, "--minimal")) {
-                try copyTemplatesToCwd(gpa, path_prefix ++ "minimal");
+                options.minimal = true;
             } else if (mem.eql(u8, arg, "-f") or mem.eql(u8, arg, "--flake")) {
-                try copyTemplatesToCwd(gpa, path_prefix ++ "flake");
+                options.flake = true;
+            } else if (mem.eql(u8, arg, "--vcs")) {
+                if (i + 1 >= args.len) {
+                    fatal("vcs option requires an argument", .{});
+                }
+                i += 1;
+                options.vcs = args[i];
             } else {
                 fatal("unrecognized parameter: '{s}'", .{arg});
             }
         } else {
             fatal("unexpected extra parameter: '{s}'", .{arg});
         }
+    }
+
+    if (options.minimal) {
+        try copyTemplatesToCwd(gpa, path_prefix ++ "minimal");
+        templates_copied = true;
+    }
+
+    if (options.flake) {
+        std.log.info("I am in the flake copy!", .{});
+        try copyTemplatesToCwd(gpa, path_prefix ++ "flake");
+        templates_copied = true;
+    }
+
+    if (!templates_copied) {
+        try copyTemplatesToCwd(gpa, path_prefix ++ "default");
+    }
+
+    if (options.vcs) |vcs| {
+        try addVcsToDirectory(gpa, vcs);
     }
 
     return cleanExit();
@@ -104,6 +140,48 @@ pub fn copyTemplatesToCwd(allocator: Allocator, template_path: []const u8) !void
     }
 }
 
+fn addVcsToDirectory(allocator: Allocator, arg: []const u8) !void {
+    var result: anyerror!void = undefined;
+
+    if (mem.eql(u8, arg, "jj")) {
+        result = runCommand(allocator, &.{ "jj", "git", "init" });
+    } else if (mem.eql(u8, arg, "git")) {
+        result = runCommand(allocator, &.{ "git", "init" });
+    } else if (mem.eql(u8, arg, "hg")) {
+        result = runCommand(allocator, &.{ "hg", "init" });
+    } else {
+        fatal("{s} vcs is not currently supported.", .{arg});
+    }
+
+    if (result) |_| {
+        std.log.info("{s} repository initialized successfully", .{arg});
+    } else |err| {
+        switch (err) {
+            error.FileNotFound => fatal("The {s} command was not found. Please ensure it's installed in your PATH.", .{arg}),
+            else => return err,
+        }
+    }
+}
+
+fn runCommand(allocator: Allocator, argv: []const []const u8) !void {
+    const result = try std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = argv,
+    });
+
+    defer allocator.free(result.stdout);
+    defer allocator.free(result.stderr);
+
+    if (result.term.Exited != 0) {
+        std.log.err("Command failed with exit code: {}", .{result.term.Exited});
+        if (result.stderr.len > 0) {
+            std.log.err("Error output: {s}", .{result.stderr});
+        }
+
+        return error.CommandFailed;
+    }
+}
+
 const usage_init =
     \\Usage: zo init
     \\
@@ -114,6 +192,7 @@ const usage_init =
     \\  -h, --help             Print this help and exit
     \\  -m, --minimal          Initializes a minimal `zig build` project
     \\  -f, --flake            Adds a basic Nix Flake for creating a Zig dev environment
+    \\  --vcs                  Initializes a repo for the provided vcs
     \\
     \\
 ;
