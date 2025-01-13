@@ -8,6 +8,7 @@ It provides a more flexible and feature-rich way to initialize Zig projects.
 - Initialize a default Zig project structure
 - Create a minimal project setup
 - Add a basic Nix Flake for Zig development environments
+- Initialize a VCS repository (only jj git and hg supported currently)
 - Easy-to-use command-line interface
 
 ## Installation
@@ -26,7 +27,10 @@ zo init --minimal (-m)
 3. Initialize a project with a Nix Flake:
 zo init --flake (-f)
 
-4. Display help information:
+4. Initialize a VCS repository:
+zo init --vcs (jj git hg)
+
+5. Display help information:
 zo --help (-h)
 
 ## Contributing
