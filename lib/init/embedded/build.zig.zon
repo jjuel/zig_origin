@@ -1,0 +1,13 @@
+.{
+    .name = "*",
+    .version = "0.0.0",
+
+    .dependencies = .{
+        .microzig = .{ .path = "path/to/your/microzig" },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
