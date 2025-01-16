@@ -22,7 +22,7 @@ pub fn main() !void {
 
     const cmd = args[1];
     const cmd_args = args[2..];
-    if (mem.eql(u8, cmd, "-h") or mem.eql(u8, cmd, "--help")) {
+    if (mem.eql(u8, cmd, "-h") or mem.eql(u8, cmd, "--help") or mem.eql(u8, cmd, "help")) {
         try io.getStdOut().writeAll(usage);
         return cleanExit();
     } else if (mem.eql(u8, cmd, "init")) {
@@ -46,8 +46,9 @@ const usage =
     \\Commands:
     \\  init:   Initializes a `zig build` project in the current working directory.
     \\  embed:  Useful commands for working with Zig in embedded environments.
+    \\  help:   Print this help and exit.
     \\
     \\Options:
-    \\  -h, --help      Print this help and exit
+    \\  -h, --help      Print this help and exit.
     \\
 ;
