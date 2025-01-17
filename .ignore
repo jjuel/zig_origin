@@ -1,0 +1,3 @@
+# Used for Helix Editor when using jj
+.zig-cache/
+zig-out/
