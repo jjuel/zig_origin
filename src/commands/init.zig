@@ -10,7 +10,6 @@ const cleanExit = std.process.cleanExit;
 const InitOptions = struct {
     minimal: bool = false,
     flake: bool = false,
-    embedded: bool = false,
     vcs: ?[]const u8 = null,
 };
 
@@ -71,11 +70,6 @@ pub fn cmdInit(gpa: Allocator, args: []const []const u8) !void {
 
     if (options.flake) {
         try copyTemplatesToCwd(gpa, path_prefix ++ "flake");
-        templates_copied = true;
-    }
-
-    if (options.embedded) {
-        try copyTemplatesToCwd(gpa, path_prefix ++ "embedded");
         templates_copied = true;
     }
 
