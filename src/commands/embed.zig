@@ -44,17 +44,29 @@ fn cmdEmbedInit(gpa: Allocator, args: []const []const u8) !void {
     while (i < args.len) : (i += 1) {
         const arg = args[i];
         if (mem.startsWith(u8, arg, "-")) {
-            if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
-                try io.getStdOut().writeAll(usage_embed_init);
-                return cleanExit();
-            } else if (mem.eql(u8, arg, "--vcs")) {
-                if (i + 1 >= args.len) {
-                    fatal("vcs option requires an argument", .{});
+            if (arg.len > 1 and arg[1] != '-') {
+                for (arg[1..]) |flag| {
+                    switch (flag) {
+                        'h' => {
+                            try io.getStdOut().writeAll(usage_embed_init);
+                            return cleanExit();
+                        },
+                        else => fatal("unrecognized parameter: '{s}'", .{arg}),
+                    }
                 }
-                i += 1;
-                options.vcs = args[i];
             } else {
-                fatal("unrecognized parameter: '{s}'", .{arg});
+                if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
+                    try io.getStdOut().writeAll(usage_embed_init);
+                    return cleanExit();
+                } else if (mem.eql(u8, arg, "--vcs")) {
+                    if (i + 1 >= args.len) {
+                        fatal("vcs option requires an argument", .{});
+                    }
+                    i += 1;
+                    options.vcs = args[i];
+                } else {
+                    fatal("unrecognized parameter: '{s}'", .{arg});
+                }
             }
         } else {
             fatal("unexpected extra parameter: '{s}'", .{arg});
